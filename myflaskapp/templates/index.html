@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form class="search" method="get" action="{{ url_for('index') }}">
+  <input type="search" name="q" value="{{ query }}" placeholder="Search by name or ingredient…">
+  {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+  <button type="submit">Search</button>
+  {% if query or category %}<a href="{{ url_for('index') }}">Clear</a>{% endif %}
+</form>
+
+<div class="category-filter">
+  <a class="chip {{ 'active' if not category }}" href="{{ url_for('index', q=query or None) }}">All</a>
+  {% for c in categories %}
+    <a class="chip {{ 'active' if category == c }}" href="{{ url_for('index', q=query or None, category=c) }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+{% if query or category %}
+  <p class="muted">
+    {{ recipes|length }} result{{ '' if recipes|length == 1 else 's' }}
+    {% if query %} for “{{ query }}”{% endif %}
+    {% if category %} in {{ category }}{% endif %}
+  </p>
+{% endif %}
+
+{% if recipes %}
+  <div class="grid">
+    {% for recipe in recipes %}
+      <a class="card" href="{{ url_for('view_recipe', recipe_id=recipe.id) }}">
+        {% if recipe.image %}
+          <img src="{{ url_for('static', filename='uploads/' ~ recipe.image) }}" alt="{{ recipe.title }}">
+        {% else %}
+          <div class="no-image">No photo</div>
+        {% endif %}
+        <h2>{{ recipe.title }}</h2>
+        {% if recipe.category %}<p class="card-info muted">{{ recipe.category }}</p>{% endif %}
+      </a>
+    {% endfor %}
+  </div>
+{% elif not query and not category %}
+  <p class="muted">No recipes yet. <a href="{{ url_for('add_recipe') }}">Add your first one.</a></p>
+{% endif %}
+{% endblock %}

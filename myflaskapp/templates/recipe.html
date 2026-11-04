@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ recipe.title }}{% endblock %}
+
+{% block content %}
+<article class="recipe">
+  <h1>{{ recipe.title }}</h1>
+  {% if recipe.category %}
+    <a class="category-badge" href="{{ url_for('index', category=recipe.category) }}">{{ recipe.category }}</a>
+  {% endif %}
+
+  {% if recipe.image %}
+    <img src="{{ url_for('static', filename='uploads/' ~ recipe.image) }}" alt="{{ recipe.title }}">
+  {% endif %}
+
+  <div class="section-heading">
+    <h2>Ingredients</h2>
+    <button id="copy-ingredients" class="small secondary" type="button">📋 Copy</button>
+  </div>
+  <ul id="ingredient-list">
+    {% for line in recipe.ingredients.splitlines() if line.strip() %}
+      <li>{{ line }}</li>
+    {% endfor %}
+  </ul>
+
+  <h2>Instructions</h2>
+  <p class="instructions">{{ recipe.instructions }}</p>
+
+  <div class="recipe-actions">
+    <a class="button" href="{{ url_for('edit_recipe', recipe_id=recipe.id) }}">✏️ Edit recipe</a>
+    <form method="post" action="{{ url_for('delete_recipe', recipe_id=recipe.id) }}">
+      <button class="danger" type="submit">Delete recipe</button>
+    </form>
+  </div>
+</article>
+
+<script>
+  const copyButton = document.getElementById("copy-ingredients");
+
+  copyButton.addEventListener("click", async () => {
+    // Read the ingredients straight from the list on the page, one per line
+    const items = document.querySelectorAll("#ingredient-list li");
+    const text = Array.from(items, li => li.textContent.trim()).join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (err) {
+      // Fallback for browsers that block the clipboard API
+      // (e.g. opening the app from your phone via the computer's IP address)
+      const box = document.createElement("textarea");
+      box.value = text;
+      document.body.appendChild(box);
+      box.select();
+      document.execCommand("copy");
+      box.remove();
+    }
+
+    copyButton.textContent = "✓ Copied!";
+    setTimeout(() => { copyButton.textContent = "📋 Copy"; }, 2000);
+  });
+</script>
+
+{% endblock %}

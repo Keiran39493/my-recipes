@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}What should I eat?{% endblock %}
+
+{% block content %}
+<h1>What should I eat?</h1>
+
+<div class="category-filter spin-filter">
+  <a class="chip {{ 'active' if not category }}" href="{{ url_for('spin') }}">All</a>
+  {% for c in categories %}
+    <a class="chip {{ 'active' if category == c }}" href="{{ url_for('spin', category=c) }}">{{ c }}</a>
+  {% endfor %}
+</div>
+
+{% if recipes|length == 0 and category %}
+  <p class="muted">You don't have any {{ category }} recipes yet. Give a recipe this category using its Edit button, or <a href="{{ url_for('spin') }}">spin all recipes</a>.</p>
+{% elif recipes|length == 1 and category %}
+  <p class="muted">There's only one {{ category }} recipe, so no need to spin:
+    <a href="{{ recipes[0].url }}">{{ recipes[0].title }}</a>.</p>
+{% elif recipes|length < 2 %}
+  <p class="muted">Add at least two recipes to use the wheel. <a href="{{ url_for('add_recipe') }}">Add a recipe</a></p>
+{% else %}
+  <div class="wheel-area">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="500" height="500"></canvas>
+  </div>
+
+  <div class="spin-controls">
+    <button id="spin-button" type="button">Spin the wheel</button>
+  </div>
+
+  <div id="result" class="result" hidden>
+    <img id="result-image" alt="">
+    <div>
+      <p class="muted">Tonight you're having…</p>
+      <h2 id="result-title"></h2>
+      <a id="result-link" class="button" href="#">View recipe</a>
+    </div>
+  </div>
+
+  <script id="recipe-data" type="application/json">{{ recipes|tojson }}</script>
+  <script>
+    const recipes = JSON.parse(document.getElementById("recipe-data").textContent);
+    const colours = ["#b5542c", "#e0a458", "#6b8f71", "#3d5a80", "#c97b84", "#8d6a9f"];
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const button = document.getElementById("spin-button");
+    const sliceDeg = 360 / recipes.length;
+    let rotation = 0;  // total degrees the wheel has turned so far
+
+    // Draw the wheel once. Slice 0 starts at the top (12 o'clock) and they go clockwise.
+    function drawWheel() {
+      const centre = canvas.width / 2;
+      const radius = centre - 5;
+      recipes.forEach((recipe, i) => {
+        const start = (-90 + i * sliceDeg) * Math.PI / 180;
+        const end = start + sliceDeg * Math.PI / 180;
+
+        ctx.beginPath();
+        ctx.moveTo(centre, centre);
+        ctx.arc(centre, centre, radius, start, end);
+        ctx.closePath();
+        // Avoid two neighbouring slices sharing a colour when the count wraps round
+        let colour = colours[i % colours.length];
+        if (i === recipes.length - 1 && i % colours.length === 0) colour = colours[2];
+        ctx.fillStyle = colour;
+        ctx.fill();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Write the title along the middle of the slice
+        ctx.save();
+        ctx.translate(centre, centre);
+        ctx.rotate(start + (end - start) / 2);
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 15px system-ui, sans-serif";
+        const label = recipe.title.length > 22 ? recipe.title.slice(0, 21) + "…" : recipe.title;
+        ctx.fillText(label, radius - 14, 0);
+        ctx.restore();
+      });
+
+      // Small circle in the middle
+      ctx.beginPath();
+      ctx.arc(centre, centre, 22, 0, 2 * Math.PI);
+      ctx.fillStyle = "#fff";
+      ctx.fill();
+    }
+
+    function spin() {
+      button.disabled = true;
+      document.getElementById("result").hidden = true;
+
+      // Pick the winner first, then work out how far to turn so it lands under the pointer
+      const winner = Math.floor(Math.random() * recipes.length);
+      const wobble = (Math.random() - 0.5) * sliceDeg * 0.7;   // don't always stop dead centre
+      const landing = 360 - (winner + 0.5) * sliceDeg + wobble;
+      const alreadyTurned = rotation % 360;
+      rotation += 5 * 360 + ((landing - alreadyTurned) + 360) % 360;   // 5 full turns, then land
+
+      canvas.style.transform = `rotate(${rotation}deg)`;
+
+      setTimeout(() => showResult(recipes[winner]), 4200);
+    }
+
+    function showResult(recipe) {
+      document.getElementById("result-title").textContent = recipe.title;
+      document.getElementById("result-link").href = recipe.url;
+      const img = document.getElementById("result-image");
+      img.hidden = !recipe.image;
+      if (recipe.image) img.src = recipe.image;
+      document.getElementById("result").hidden = false;
+      button.disabled = false;
+      button.textContent = "Spin again";
+    }
+
+    drawWheel();
+    button.addEventListener("click", spin);
+  </script>
+{% endif %}
+{% endblock %}

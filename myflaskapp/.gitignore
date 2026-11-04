@@ -1,0 +1,14 @@
+# Python's own files
+.venv/
+__pycache__/
+
+# Your local data: the database and uploaded photos
+*.db
+static/uploads/
+
+# Body Coach recipes and photos (paid content - keep private)
+import_recipes.py
+import_images/
+
+# Secrets
+.env
