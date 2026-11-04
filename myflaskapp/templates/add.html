@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{# This one template is used for both adding and editing. "recipe" is None when adding. #}
+{% block title %}{{ "Edit recipe" if recipe else "Add recipe" }}{% endblock %}
+
+{% block content %}
+<h1>{{ "Edit recipe" if recipe else "Add a recipe" }}</h1>
+
+<!-- enctype is required, otherwise the image file is never sent -->
+<form class="recipe-form" method="post" enctype="multipart/form-data">
+  <label>Title
+    <input type="text" name="title" value="{{ form.get('title', '') }}" required>
+  </label>
+
+  <label>Category
+    <select name="category">
+      <option value="">No category</option>
+      {% for c in categories %}
+        <option value="{{ c }}" {{ "selected" if form.get('category') == c }}>{{ c }}</option>
+      {% endfor %}
+    </select>
+  </label>
+
+  <label>Ingredients <span class="muted">(one per line)</span>
+    <textarea name="ingredients" rows="6" required>{{ form.get('ingredients', '') }}</textarea>
+  </label>
+
+  <label>Instructions
+    <textarea name="instructions" rows="8" required>{{ form.get('instructions', '') }}</textarea>
+  </label>
+
+  {% if recipe and recipe.image %}
+    <div class="current-photo">
+      <img src="{{ url_for('static', filename='uploads/' ~ recipe.image) }}" alt="Current photo">
+      <label class="checkbox"><input type="checkbox" name="remove_image" value="1"> Remove this photo</label>
+    </div>
+  {% endif %}
+
+  <label>{{ "Replace photo" if recipe and recipe.image else "Photo" }} <span class="muted">(optional, max 5 MB)</span>
+    <input type="file" name="image" accept="image/*">
+  </label>
+
+  <div class="form-actions">
+    <button type="submit">{{ "Save changes" if recipe else "Save recipe" }}</button>
+    {% if recipe %}
+      <a href="{{ url_for('view_recipe', recipe_id=recipe.id) }}">Cancel</a>
+    {% endif %}
+  </div>
+</form>
+{% endblock %}

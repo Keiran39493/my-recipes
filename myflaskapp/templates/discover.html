@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Discover recipes{% endblock %}
+
+{% block content %}
+<h1>Discover new recipes</h1>
+<p class="muted">Search thousands of free recipes from TheMealDB and save the ones you like.</p>
+
+<form class="search" method="get" action="{{ url_for('discover') }}">
+  <input type="search" name="q" value="{{ query }}" placeholder="Try “chicken”, “curry” or “pasta”…">
+  <button type="submit">Search</button>
+  <button class="secondary" type="submit" name="random" value="1" formnovalidate>🎲 Surprise me</button>
+</form>
+
+{% if error %}
+  <p class="flash">{{ error }}</p>
+{% elif searched and not results %}
+  <p class="muted">No recipes found{% if query %} for “{{ query }}”{% endif %}. TheMealDB searches by recipe name, so try a single word like “beef” or “soup”.</p>
+{% endif %}
+
+{% if results %}
+  <div class="grid">
+    {% for meal in results %}
+      <div class="card">
+        {% if meal.image %}
+          <img src="{{ meal.image }}" alt="{{ meal.title }}" loading="lazy">
+        {% else %}
+          <div class="no-image">No photo</div>
+        {% endif %}
+        <h2>{{ meal.title }}</h2>
+        {% if meal.info %}<p class="card-info muted">{{ meal.info }}</p>{% endif %}
+        <div class="card-actions">
+          {% if meal.saved %}
+            <span class="saved-label">✓ Saved</span>
+          {% else %}
+            <form method="post" action="{{ url_for('save_from_mealdb', meal_id=meal.id) }}">
+              <button class="small" type="submit">Save to my recipes</button>
+            </form>
+          {% endif %}
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}
